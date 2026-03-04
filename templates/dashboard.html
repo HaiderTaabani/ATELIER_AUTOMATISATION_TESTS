@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Dashboard - CountAPI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .btn-run {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .btn-run:hover {
+            opacity: 0.9;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .status-pass { color: var(--success); }
+        .status-fail { color: var(--danger); }
+
+        /* Last Run Details */
+        .last-run-section {
+            margin-bottom: 3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #f3f4f6;
+            text-align: left;
+            padding: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        td {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pass { background: #d1fae5; color: #065f46; }
+        .badge-fail { background: #fee2e2; color: #991b1b; }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>CountAPI Monitoring</h1>
+                <p class="text-muted">Automated API Testing Dashboard</p>
+            </div>
+            <a href="/run" class="btn-run">Manual Run Now</a>
+        </header>
+
+        {% if last_run %}
+        <div class="last-run-section">
+            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Latest Run Summary</h2>
+            <div class="metrics-grid">
+                <div class="card">
+                    <div class="card-title">Status</div>
+                    <div class="card-value {% if last_run.failed == 0 %}status-pass{% else %}status-fail{% endif %}">
+                        {% if last_run.failed == 0 %}SUCCESS{% else %}FAILED{% endif %}
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Latency (Avg)</div>
+                    <div class="card-value">{{ last_run.latency_avg }}ms</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Latency (P95)</div>
+                    <div class="card-value">{{ last_run.latency_p95 }}ms</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Availability</div>
+                    <div class="card-value">{{ (last_run.availability * 100)|round(1) }}%</div>
+                </div>
+            </div>
+
+            <h3>Test Details</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>Status</th>
+                        <th>Latency</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in last_run_data.tests %}
+                    <tr>
+                        <td style="font-weight: 500;">{{ test.name }}</td>
+                        <td>
+                            <span class="badge {% if test.status == 'PASS' %}badge-pass{% else %}badge-fail{% endif %}">
+                                {{ test.status }}
+                            </span>
+                        </td>
+                        <td>{{ test.latency_ms|round(1) }}ms</td>
+                        <td class="text-muted">{{ test.details if test.details else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p>No runs recorded yet. Click "Manual Run" to start.</p>
+        </div>
+        {% endif %}
+
+        <div class="history-section">
+            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Execution History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Passed</th>
+                        <th>Failed</th>
+                        <th>Avg Latency</th>
+                        <th>Availability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in history %}
+                    <tr>
+                        <td class="timestamp">{{ run.timestamp }}</td>
+                        <td class="status-pass" style="font-weight: 600;">{{ run.passed }}</td>
+                        <td class="status-fail" style="font-weight: 600;">{{ run.failed }}</td>
+                        <td>{{ run.latency_avg }}ms</td>
+                        <td>{{ (run.availability * 100)|round(0) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
