@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,8 +87,13 @@
             font-weight: 700;
         }
 
-        .status-pass { color: var(--success); }
-        .status-fail { color: var(--danger); }
+        .status-pass {
+            color: var(--success);
+        }
+
+        .status-fail {
+            color: var(--danger);
+        }
 
         /* Last Run Details */
         .last-run-section {
@@ -100,7 +106,7 @@
             background: var(--card-bg);
             border-radius: 0.75rem;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         th {
@@ -125,8 +131,15 @@
             font-weight: 600;
         }
 
-        .badge-pass { background: #d1fae5; color: #065f46; }
-        .badge-fail { background: #fee2e2; color: #991b1b; }
+        .badge-pass {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
 
         .timestamp {
             font-size: 0.75rem;
@@ -134,11 +147,12 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
             <div>
-                <h1>CountAPI Monitoring</h1>
+                <h1>Agify Monitoring</h1>
                 <p class="text-muted">Automated API Testing Dashboard</p>
             </div>
             <a href="/run" class="btn-run">Manual Run Now</a>
@@ -227,4 +241,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -11,7 +11,7 @@ def calculate_p95(latencies):
     return sorted_latencies[idx]
 
 def run_tests():
-    client = APIClient("https://api.countapi.xyz", timeout=3, max_retries=1)
+    client = APIClient("https://api.agify.io", timeout=3, max_retries=1)
     
     start_time = datetime.now()
     test_results = run_all_tests(client)
@@ -28,7 +28,7 @@ def run_tests():
     availability = 1.0 if failed == 0 else (passed / len(test_results))
     
     summary = {
-        "api": "CountAPI",
+        "api": "Agify",
         "timestamp": start_time.isoformat(),
         "summary": {
             "passed": passed,

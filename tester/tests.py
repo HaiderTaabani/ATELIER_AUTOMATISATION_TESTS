@@ -1,97 +1,91 @@
-import random
-import string
-
-def generate_random_key(length=8):
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-def test_hit_endpoint(client):
-    key = "demo_key_" + generate_random_key()
-    resp, latency, error = client.get(f"/hit/test_namespace/{key}")
+def test_single_name(client):
+    resp, latency, error = client.get("/?name=michael")
     
     if error:
-        return {"name": "GET /hit", "status": "FAIL", "latency_ms": latency, "details": error}
+        return {"name": "GET /?name=michael", "status": "FAIL", "latency_ms": latency, "details": error}
     
     if resp.status_code == 200:
         data = resp.json()
-        if "value" in data and isinstance(data["value"], int):
-            return {"name": "GET /hit", "status": "PASS", "latency_ms": latency}
+        if all(k in data for k in ["name", "age", "count"]):
+            return {"name": "GET /?name=michael", "status": "PASS", "latency_ms": latency}
         else:
-            return {"name": "GET /hit", "status": "FAIL", "latency_ms": latency, "details": "Invalid JSON structure"}
+            return {"name": "GET /?name=michael", "status": "FAIL", "latency_ms": latency, "details": "Missing fields in JSON"}
     else:
-        return {"name": "GET /hit", "status": "FAIL", "latency_ms": latency, "details": f"Status code {resp.status_code}"}
+        return {"name": "GET /?name=michael", "status": "FAIL", "latency_ms": latency, "details": f"Status {resp.status_code}"}
 
-def test_get_endpoint(client):
-    # We use 'demo/key' which is likely to exist or persist during short tests
-    resp, latency, error = client.get("/get/test_namespace/demo_key")
+def test_multiple_names(client):
+    resp, latency, error = client.get("/?name[]=michael&name[]=peter")
     
     if error:
-        return {"name": "GET /get", "status": "FAIL", "latency_ms": latency, "details": error}
-    
-    if resp.status_code in [200, 404]: # 404 is valid for non-existent key, but for contract we expect 200 if key exists
-        return {"name": "GET /get", "status": "PASS", "latency_ms": latency}
-    else:
-        return {"name": "GET /get", "status": "FAIL", "latency_ms": latency, "details": f"Status code {resp.status_code}"}
-
-def test_info_endpoint(client):
-    resp, latency, error = client.get("/info/test_namespace/demo_key")
-    
-    if error:
-        return {"name": "GET /info", "status": "FAIL", "latency_ms": latency, "details": error}
+        return {"name": "GET multiple names", "status": "FAIL", "latency_ms": latency, "details": error}
     
     if resp.status_code == 200:
         data = resp.json()
-        required_fields = ["namespace", "key", "value"]
-        if all(field in data for field in required_fields):
-            return {"name": "GET /info", "status": "PASS", "latency_ms": latency}
+        if isinstance(data, list) and len(data) == 2:
+            return {"name": "GET multiple names", "status": "PASS", "latency_ms": latency}
         else:
-            return {"name": "GET /info", "status": "FAIL", "latency_ms": latency, "details": "Missing fields in info"}
-    elif resp.status_code == 404:
-        return {"name": "GET /info", "status": "PASS", "latency_ms": latency, "details": "Key not found (valid 404)"}
+            return {"name": "GET multiple names", "status": "FAIL", "latency_ms": latency, "details": "Expected list of 2 items"}
     else:
-        return {"name": "GET /info", "status": "FAIL", "latency_ms": latency, "details": f"Status code {resp.status_code}"}
+        return {"name": "GET multiple names", "status": "FAIL", "latency_ms": latency, "details": f"Status {resp.status_code}"}
 
-def test_invalid_namespace(client):
-    # Very long or invalid namespace
-    resp, latency, error = client.get("/get/this_namespace_does_not_exist_12345/some_key")
+def test_with_country(client):
+    resp, latency, error = client.get("/?name=michael&country_id=FR")
     
     if error:
-        return {"name": "Invalid Namespace", "status": "FAIL", "latency_ms": latency, "details": error}
+        return {"name": "GET with country", "status": "FAIL", "latency_ms": latency, "details": error}
     
-    if resp.status_code == 404:
-        return {"name": "Invalid Namespace", "status": "PASS", "latency_ms": latency}
+    if resp.status_code == 200:
+        return {"name": "GET with country", "status": "PASS", "latency_ms": latency}
     else:
-        return {"name": "Invalid Namespace", "status": "FAIL", "latency_ms": latency, "details": f"Expected 404, got {resp.status_code}"}
+        return {"name": "GET with country", "status": "FAIL", "latency_ms": latency, "details": f"Status {resp.status_code}"}
 
-def test_status_endpoint(client):
-    # CountAPI doesn't have a direct health check usually, but we check root or simple get
+def test_missing_name(client):
+    # Agify requires 'name' parameter, returns 422
     resp, latency, error = client.get("/")
     
     if error:
-        return {"name": "API Status (Root)", "status": "FAIL", "latency_ms": latency, "details": error}
+        return {"name": "Invalid Request (Missing name)", "status": "FAIL", "latency_ms": latency, "details": error}
     
-    if resp.status_code < 500:
-        return {"name": "API Status (Root)", "status": "PASS", "latency_ms": latency}
+    # In mock mode or real, we expect 422 for Agify root without name
+    if resp.status_code == 422:
+        return {"name": "Invalid Request (Missing name)", "status": "PASS", "latency_ms": latency}
     else:
-        return {"name": "API Status (Root)", "status": "FAIL", "latency_ms": latency, "details": f"Server Error {resp.status_code}"}
+        return {"name": "Invalid Request (Missing name)", "status": "FAIL", "latency_ms": latency, "details": f"Expected 422, got {resp.status_code}"}
 
-def test_robustness_retry(client):
-    # This is more of a smoke test to see if the client handles a simple valid request without failing
-    resp, latency, error = client.get("/hit/demo/robustness_test")
+def test_qos_root(client):
+    # Check Agify website/root to measure availability
+    resp, latency, error = client.get("https://agify.io")
     
     if error:
-        return {"name": "Robustness Smoke Test", "status": "FAIL", "latency_ms": latency, "details": error}
+        return {"name": "Agify Landing Page", "status": "FAIL", "latency_ms": latency, "details": error}
     
     if resp.status_code == 200:
-        return {"name": "Robustness Smoke Test", "status": "PASS", "latency_ms": latency}
+        return {"name": "Agify Landing Page", "status": "PASS", "latency_ms": latency}
     else:
-        return {"name": "Robustness Smoke Test", "status": "FAIL", "latency_ms": latency, "details": f"Status code {resp.status_code}"}
+        return {"name": "Agify Landing Page", "status": "FAIL", "latency_ms": latency, "details": f"Status {resp.status_code}"}
+
+def test_response_types(client):
+    # Functional test for data types
+    resp, latency, error = client.get("/?name=test")
+    
+    if error:
+        return {"name": "Type Check (name/age)", "status": "FAIL", "latency_ms": latency, "details": error}
+    
+    if resp.status_code == 200:
+        data = resp.json()
+        if isinstance(data.get("age"), (int, type(None))) and isinstance(data.get("name"), str):
+            return {"name": "Type Check (name/age)", "status": "PASS", "latency_ms": latency}
+        else:
+            return {"name": "Type Check (name/age)", "status": "FAIL", "latency_ms": latency, "details": "Type mismatch"}
+    else:
+        return {"name": "Type Check (name/age)", "status": "FAIL", "latency_ms": latency, "details": f"Status {resp.status_code}"}
 
 def run_all_tests(client):
     results = []
-    results.append(test_hit_endpoint(client))
-    results.append(test_get_endpoint(client))
-    results.append(test_info_endpoint(client))
-    results.append(test_invalid_namespace(client))
-    results.append(test_status_endpoint(client))
-    results.append(test_robustness_retry(client))
+    results.append(test_single_name(client))
+    results.append(test_multiple_names(client))
+    results.append(test_with_country(client))
+    results.append(test_missing_name(client))
+    results.append(test_qos_root(client))
+    results.append(test_response_types(client))
     return results
